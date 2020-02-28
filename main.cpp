@@ -22,9 +22,11 @@ const int   height   = 796;
 const float fov      = M_PI/2.;
 
 struct Material {
-    Material(const Vec3f &color) : diffuse_color(color) {}
+    Material(const Vec3f &color , const Vec2f &a ,const float &spec) : diffuse_color(color), albedo(a), specular(spec) {}
     Material() : diffuse_color() {}
     Vec3f diffuse_color;
+    Vec2f albedo;
+    float specular;
 };
 
 struct Light {
@@ -57,6 +59,11 @@ struct Sphere {
     }
 };
 
+
+Vec3f reflect(const Vec3f &I, const Vec3f &N) {
+    return I - N*2.f*(I*N);
+}
+
 bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, Vec3f &hit, Vec3f &N, Material &material) {
     float spheres_dist = std::numeric_limits<float>::max();
     for (size_t i=0; i < spheres.size(); i++) {
@@ -82,12 +89,32 @@ Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &s
         return Vec3f(0.2, 0.7, 0.8); // background color
     }
     
-    float diffuse_light_intensity = 0;
+    float diffuse_light_intensity = 0, specular_light_intensity = 0;
     for (size_t i=0; i<lights.size(); i++) {
         Vec3f light_dir      = (lights[i].position - point).normalize();
+        float light_distance = (lights[i].position - point).norm();
+        Vec3f shadow_orig;
+
+        
+        if (light_dir*N < 0) // checking if the point lies in the shadow of the lights[i]
+        {
+          shadow_orig = point - N*1e-3;
+        } 
+        else
+        {
+          shadow_orig = point + N*1e-3;
+        }
+        
+        Vec3f shadow_pt, shadow_N;
+        Material tmpmaterial;
+
+        if (scene_intersect(shadow_orig, light_dir, spheres, shadow_pt, shadow_N, tmpmaterial) && (shadow_pt-shadow_orig).norm() < light_distance)
+            continue;
+
         diffuse_light_intensity  += lights[i].intensity * std::max(0.f, light_dir*N);
+        specular_light_intensity += powf(std::max(0.f, -reflect(-light_dir, N)*dir), material.specular)*lights[i].intensity;
     }
-    return material.diffuse_color * diffuse_light_intensity;
+    return material.diffuse_color * diffuse_light_intensity * material.albedo[0] + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo[1];
     //return material.diffuse_color;
 }
 
@@ -122,8 +149,8 @@ int main(int argc, const char** argv)
     sceneId = atoi(cmdLineParams["-scene"].c_str());
 
 
-    Material      ivory(Vec3f(0.4, 0.4, 0.3));
-    Material red_rubber(Vec3f(0.3, 0.1, 0.1));
+    Material      ivory(Vec3f(0.4, 0.4, 0.3),Vec2f(0.6,  0.3), 50.);
+    Material red_rubber(Vec3f(0.3, 0.1, 0.1),Vec2f(0.9,  0.1), 10.);
 
     // Material      ivory(0x00CDE5FC);
     // Material red_rubber(0x000E1A74);
@@ -139,6 +166,8 @@ int main(int argc, const char** argv)
       spheres.push_back(Sphere(Vec3f( 7,    5,   -18), 4,      ivory));
 
       lights.push_back(Light(Vec3f(-20, 20,  20), 1.5));
+      lights.push_back(Light(Vec3f( 30, 50, -25), 1.8));
+      lights.push_back(Light(Vec3f( 30, 20,  30), 1.7));
     }
    else if(sceneId == 2)
    {
@@ -153,10 +182,7 @@ int main(int argc, const char** argv)
      spheres.push_back(Sphere(Vec3f(-1.0, -1.5, -12), 2, ivory));
    }
      
-  
-  std::vector<Vec3f> buffer(height*width);
-  std::vector<uint32_t> buff2(height*width*3); 
-  std::vector<uint32_t> image(height*width); 
+    std::vector<uint32_t> image(height*width); 
 
 
 
@@ -164,7 +190,7 @@ int main(int argc, const char** argv)
     {   for (size_t i = 0; i<width; i++) 
         {
             float dir_x =  (i + 0.5) -  width/2.;
-            float dir_y = -(j + 0.5) + height/2.;    // this flips the image at the same time
+            float dir_y = (j + 0.5) - height/2.;    // this flips the image at the same time
             float dir_z = -height/(2.*tan(fov/2.));
             
             Vec3f temp = cast_ray(Vec3f(0,0,0), Vec3f(dir_x, dir_y, dir_z).normalize(),spheres,lights);
