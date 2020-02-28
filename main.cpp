@@ -21,9 +21,9 @@ const int   height   = 768;
 const float fov      = M_PI/2.;
 
 struct Material {
-    Material(const u_int32_t &color) : diffuse_color(color) {}
+    Material(const Vec3f &color) : diffuse_color(color) {}
     Material() : diffuse_color() {}
-    uint32_t diffuse_color;
+    Vec3f diffuse_color;
 };
 
 struct Light {
@@ -71,13 +71,14 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
 }
 
 
-uint32_t cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres,const std::vector<Light> &lights) 
+Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres,const std::vector<Light> &lights) 
 {
     Vec3f point, N;
     Material material;
     float sphere_dist = std::numeric_limits<float>::max();
         if (!scene_intersect(orig, dir, spheres, point, N, material)) {
-        return 0x24C5CC00; // background color
+        //return 0x24C5CC00; // background color
+        return Vec3f(0.2, 0.7, 0.8); // background color
     }
     
     float diffuse_light_intensity = 0;
@@ -119,8 +120,8 @@ int main(int argc, const char** argv)
     sceneId = atoi(cmdLineParams["-scene"].c_str());
 
 
-    Material      ivory(0x00CDE5FC);
-    Material red_rubber(0x000E1A74);
+    Material      ivory(Vec3f(0.4, 0.4, 0.3));
+    Material red_rubber(Vec3f(0.3, 0.1, 0.1));
 
     // Material      ivory(0x00CDE5FC);
     // Material red_rubber(0x000E1A74);
@@ -149,7 +150,7 @@ int main(int argc, const char** argv)
    }
      
   
-  std::vector<uint32_t> image(height*width); 
+  std::vector<Vec3f> image(height*width); 
 
   for (size_t j = 0; j<height; j++) { // actual rendering loop
         for (size_t i = 0; i<width; i++) {
