@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdint>
+#include <cstring>
 #include <cmath>
 #include <limits>
 
@@ -17,7 +18,7 @@ const uint32_t GREEN = 0x0000FF00;
 const uint32_t BLUE  = 0x00FF0000  ;
 
 const int   width    = 1024;
-const int   height   = 768;
+const int   height   = 796;
 const float fov      = M_PI/2.;
 
 struct Material {
@@ -87,6 +88,7 @@ Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &s
         diffuse_light_intensity  += lights[i].intensity * std::max(0.f, light_dir*N);
     }
     return material.diffuse_color * diffuse_light_intensity;
+    //return material.diffuse_color;
 }
 
 
@@ -136,12 +138,14 @@ int main(int argc, const char** argv)
       spheres.push_back(Sphere(Vec3f( 1.5, -0.5, -18), 3, red_rubber));
       spheres.push_back(Sphere(Vec3f( 7,    5,   -18), 4,      ivory));
 
-      lights.push_back(Light(Vec3f(-20, 20,  20), 0.5));
+      lights.push_back(Light(Vec3f(-20, 20,  20), 1.5));
     }
    else if(sceneId == 2)
    {
-     spheres.push_back(Sphere(Vec3f( 1.5, -0.5, -18), 3, red_rubber));
+     //spheres.push_back(Sphere(Vec3f( 1.5, -0.5, -18), 5, red_rubber));
      spheres.push_back(Sphere(Vec3f( 7,    5,   -18), 4,      ivory));
+
+     lights.push_back(Light(Vec3f(-20, 20,  20), 1.5));
    }
       
    else if(sceneId == 3)
@@ -150,16 +154,31 @@ int main(int argc, const char** argv)
    }
      
   
-  std::vector<Vec3f> image(height*width); 
+  std::vector<Vec3f> buffer(height*width);
+  std::vector<uint32_t> buff2(height*width*3); 
+  std::vector<uint32_t> image(height*width); 
 
-  for (size_t j = 0; j<height; j++) { // actual rendering loop
-        for (size_t i = 0; i<width; i++) {
+
+
+  for (size_t j = 0; j<height; j++) // actual rendering loop
+    {   for (size_t i = 0; i<width; i++) 
+        {
             float dir_x =  (i + 0.5) -  width/2.;
             float dir_y = -(j + 0.5) + height/2.;    // this flips the image at the same time
             float dir_z = -height/(2.*tan(fov/2.));
-            image[i+j*width] = cast_ray(Vec3f(0,0,0), Vec3f(dir_x, dir_y, dir_z).normalize(),spheres,lights);
+            
+            Vec3f temp = cast_ray(Vec3f(0,0,0), Vec3f(dir_x, dir_y, dir_z).normalize(),spheres,lights);
+            //std:: cout <<std::showbase << std:: hex << (255*temp[0]) << " " << (255*temp[1]) << " "<< (255*temp[2])  << std:: endl;
+          
+            float max = std::max(temp[0], std::max(temp[1], temp[2]));
+            if (max>1) temp = temp*(1./max);
+              image[i+j*width] = (uint32_t)(255 * std::max(0.f, std::min(1.f, temp[2])))<<16 
+                                 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp[1])))<<8
+                                 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp[0])));
+          
         }
     }
+  
 
   SaveBMP(outFilePath.c_str(), image.data(), width, height);
 
