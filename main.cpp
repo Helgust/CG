@@ -26,24 +26,41 @@ struct Settings
   float bias;
 };
 
-
-
-
-  Vec3f cast_ray(const Vec3f &origin, const Vec3f &dir, Sphere &sphere, const Settings &settings)
+bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, Vec3f &hit, Vec3f &N, Material &material)
+{
+  float spheres_dist = std::numeric_limits<float>::max();
+  for (size_t i = 0; i < spheres.size(); i++)
   {
+    float dist_i;
+    if (spheres[i].intersection(orig, dir, dist_i) && dist_i < spheres_dist)
+    {
+      spheres_dist = dist_i;
+      hit = orig + dir * dist_i;
+      N = normalize(hit - spheres[i].center);
+      material = spheres[i].material;
+    }
+  }
+  return spheres_dist < 1000;
+}
 
-    float sphere_dist = std::numeric_limits<float>::max();
-    if (!sphere.intersection(origin, dir, sphere_dist))
-    {
-      return settings.backgroundColor;
-    }
-    else
-    {
-       return Vec3f(1, 0.4, 0.3);
-    }
-    
+Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, const Settings &settings)
+{
+  Vec3f point, N;
+  Material material;
+
+  if (!scene_intersect(orig, dir, spheres, point, N, material))
+  {
+    return settings.backgroundColor; // background color
   }
 
+  float diffuse_light_intensity = 0;
+  for (size_t i = 0; i < lights.size(); i++)
+  {
+    Vec3f light_dir = normalize(lights[i].position - point);
+    diffuse_light_intensity += lights[i].intensity * std::max(0.f, dotProduct(light_dir, N));
+  }
+  return material.diffuse_color * diffuse_light_intensity;
+}
 
 int main(int argc, const char **argv)
 {
@@ -73,23 +90,27 @@ int main(int argc, const char **argv)
   if (cmdLineParams.find("-scene") != cmdLineParams.end())
     sceneId = atoi(cmdLineParams["-scene"].c_str());
 
-
   Settings settings;
 
   settings.width = 1024;
   settings.height = 768;
-  settings.fov = 90;
+  settings.fov = 60;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.2, 0.7, 0.8);
-  
 
-  //std::vector<Sphere> spheres;
+  Material orange(Vec3f(1, 0.4, 0.3));
+  Material ivory(Vec3f(0.4, 0.4, 0.3));
 
-  Sphere sphere(Vec3f(-1, 0, -4), 2);
+  std::vector<Sphere> spheres;
+  std::vector<Light> lights;
 
   if (sceneId == 1)
   {
-   //spheres.push_back(Sphere(Vec3f(-1, 0, -12), 2));
+    spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
+    spheres.push_back(Sphere(Vec3f(-5, 0, -18), 4, ivory));
+
+    //lights.push_back(Light(Vec3f(, 10, -12), 0.5));
+    lights.push_back(Light(Vec3f(0, 10, 0), 1));
   }
   else if (sceneId == 2)
   {
@@ -101,19 +122,19 @@ int main(int argc, const char **argv)
 
   std::vector<uint32_t> image(settings.height * settings.width);
 
-  float scale = tan(deg2rad(settings.fov * 0.5)); 
+  float scale = tan(deg2rad(settings.fov * 0.5));
   float imageAspectRatio = settings.width / (float)settings.height;
-
 
   for (size_t j = 0; j < settings.height; j++) // actual rendering loop
   {
     for (size_t i = 0; i < settings.width; i++)
     {
-      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale; 
-      float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale; 
+      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale;
+      float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale;
 
-      Vec3f dir = normalize(Vec3f(x, y, -1));
-      Vec3f temp = cast_ray(Vec3f(0,0,0), dir, sphere, settings);;
+      Vec3f dir = normalize(Vec3f(x, -y, -1));
+      Vec3f temp = cast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
+      ;
       float max = std::max(temp.x, std::max(temp.y, temp.z));
       if (max > 1)
         temp = temp * (1. / max);
