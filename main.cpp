@@ -40,7 +40,21 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
       material = spheres[i].material;
     }
   }
-  return spheres_dist < 1000;
+  
+  float checkerboard_dist = std::numeric_limits<float>::max();
+
+  if (fabs(dir.y)>1e-3)  {
+    float d = -(orig.y+4)/dir.y; // the checkerboard plane has equation y = -4
+        Vec3f pt = orig + dir*d;
+         if (d>0 && d<spheres_dist) {
+            checkerboard_dist = d;
+            hit = pt;
+            N = Vec3f(0,1,0);
+            material.diffuse_color = (int(0.25*hit.x+10000) + int(0.25*hit.z)) & 1 ? Vec3f(1,1,1) : Vec3f(0, 0, 0);
+            material.diffuse_color = material.diffuse_color*.3;
+         }
+    }
+  return std::min(spheres_dist, checkerboard_dist)<1000;
 }
 
 Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, const Settings &settings)
@@ -106,11 +120,12 @@ int main(int argc, const char **argv)
 
   if (sceneId == 1)
   {
-    spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
     spheres.push_back(Sphere(Vec3f(-5, 0, -18), 4, ivory));
+    spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
+    
 
-    //lights.push_back(Light(Vec3f(, 10, -12), 0.5));
-    lights.push_back(Light(Vec3f(0, 10, 0), 1));
+    lights.push_back(Light(Vec3f(1,0, -12), 0.5));
+    lights.push_back(Light(Vec3f(0, 5, -10), 1));
   }
   else if (sceneId == 2)
   {
