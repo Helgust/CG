@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cmath>
 #include <limits>
+#include <ctime>
 
 #include <string>
 #include <vector>
@@ -78,6 +79,7 @@ Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &s
 
 int main(int argc, const char **argv)
 {
+  clock_t begin = clock();
   std::unordered_map<std::string, std::string> cmdLineParams;
 
   for (int i = 0; i < argc; i++)
@@ -108,7 +110,7 @@ int main(int argc, const char **argv)
 
   settings.width = 1024;
   settings.height = 768;
-  settings.fov = 60;
+  settings.fov = 100;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.2, 0.7, 0.8);
 
@@ -122,6 +124,12 @@ int main(int argc, const char **argv)
   {
     spheres.push_back(Sphere(Vec3f(-5, 0, -18), 4, ivory));
     spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
+    spheres.push_back(Sphere(Vec3f(-5, 10, -23), 1, ivory));
+    spheres.push_back(Sphere(Vec3f(12, 2, -63), 4, orange));
+    spheres.push_back(Sphere(Vec3f(-2, 5, -43), 3, ivory));
+    spheres.push_back(Sphere(Vec3f(7, -6, -16), 1, orange));
+    spheres.push_back(Sphere(Vec3f(-8, -3, -200), 2, ivory));
+    spheres.push_back(Sphere(Vec3f(10, 8, -12), 1, orange));
     
 
     lights.push_back(Light(Vec3f(1,0, -12), 0.5));
@@ -160,5 +168,8 @@ int main(int argc, const char **argv)
   SaveBMP(outFilePath.c_str(), image.data(), settings.width, settings.height);
 
   std::cout << "end." << std::endl;
+  clock_t end = clock();
+  double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  std::cout << "runtime= " << time_spent << std::endl;
   return 0;
 }
