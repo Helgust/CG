@@ -12,6 +12,7 @@
 #include "Bitmap.h"
 #include "vectors.h"
 #include "objects.h"
+#include "functions.h"
 
 const uint32_t RED = 0x000000FF;
 const uint32_t GREEN = 0x0000FF00;
@@ -41,21 +42,24 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
       material = spheres[i].material;
     }
   }
-  
-  float checkerboard_dist = std::numeric_limits<float>::max();
 
-  if (fabs(dir.y)>1e-3)  {
-    float d = -(orig.y+4)/dir.y; // the checkerboard plane has equation y = -4
-        Vec3f pt = orig + dir*d;
-         if (d>0 && d<spheres_dist) {
-            checkerboard_dist = d;
-            hit = pt;
-            N = Vec3f(0,1,0);
-            material.diffuse_color = (int(0.25*hit.x+10000) + int(0.25*hit.z)) & 1 ? Vec3f(1,1,1) : Vec3f(0, 0, 0);
-            material.diffuse_color = material.diffuse_color*.3;
-         }
+/*   float checkerboard_dist = std::numeric_limits<float>::max();
+
+  if (fabs(dir.y) > 1e-3)
+  {
+    float d = -(orig.y + 4) / dir.y; // the checkerboard plane has equation y = -4
+    Vec3f pt = orig + dir * d;
+    if (d > 0 && d < spheres_dist)
+    {
+      checkerboard_dist = d;
+      hit = pt;
+      N = Vec3f(0, 1, 0);
+      material.diffuse_color = (int(0.25 * hit.x + 10000) + int(0.25 * hit.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0.0, 0.0);
+      material.diffuse_color = material.diffuse_color * 0.3;
     }
-  return std::min(spheres_dist, checkerboard_dist)<1000;
+  }
+  return std::min(spheres_dist, checkerboard_dist) < 1000; */
+  return spheres_dist < 1000;
 }
 
 Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, const Settings &settings)
@@ -69,12 +73,26 @@ Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &s
   }
 
   float diffuse_light_intensity = 0;
+  float specular_light_intensity = 0;
   for (size_t i = 0; i < lights.size(); i++)
   {
     Vec3f light_dir = normalize(lights[i].position - point);
+
+    float light_distance = norma(lights[i].position - point);
+
+    Vec3f shadow_orig = dotProduct(light_dir,N) < 0 ? point - N * 1e-3 : point + N * 1e-3; // checking if the point lies in the shadow of the lights[i]
+    Vec3f shadow_pt, shadow_N;
+    Material tmpmaterial;
+
+    if (scene_intersect(shadow_orig, light_dir, spheres, shadow_pt, shadow_N, tmpmaterial) && norma(shadow_pt - shadow_orig)< light_distance)
+      continue;
+    
     diffuse_light_intensity += lights[i].intensity * std::max(0.f, dotProduct(light_dir, N));
+    Vec3f R = reflect(light_dir, N);
+    specular_light_intensity += lights[i].intensity * powf(std::max(0.f, dotProduct(R, -dir)), material.specular);
   }
-  return material.diffuse_color * diffuse_light_intensity;
+  //return material.diffuse_color * diffuse_light_intensity * material.albedo.x + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo.y;
+   return Vec3f(1., 1., 1.)*specular_light_intensity*material.albedo.y;
 }
 
 int main(int argc, const char **argv)
@@ -110,33 +128,32 @@ int main(int argc, const char **argv)
 
   settings.width = 1024;
   settings.height = 768;
-  settings.fov = 100;
+  settings.fov = 90;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.2, 0.7, 0.8);
 
-  Material orange(Vec3f(1, 0.4, 0.3));
-  Material ivory(Vec3f(0.4, 0.4, 0.3));
+  Material orange(Vec3f(1, 0.4, 0.3), Vec2f(0.6, 0.3), 50.0);
+  Material ivory(Vec3f(0.4, 0.4, 0.3), Vec2f(0.9, 0.1), 20.0);
 
   std::vector<Sphere> spheres;
   std::vector<Light> lights;
 
   if (sceneId == 1)
   {
-    spheres.push_back(Sphere(Vec3f(-5, 0, -18), 4, ivory));
+    spheres.push_back(Sphere(Vec3f(-3, -6, -11), 3, ivory));
     spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
-    spheres.push_back(Sphere(Vec3f(-5, 10, -23), 1, ivory));
-    spheres.push_back(Sphere(Vec3f(12, 2, -63), 4, orange));
-    spheres.push_back(Sphere(Vec3f(-2, 5, -43), 3, ivory));
-    spheres.push_back(Sphere(Vec3f(7, -6, -16), 1, orange));
-    spheres.push_back(Sphere(Vec3f(-8, -3, -200), 2, ivory));
-    spheres.push_back(Sphere(Vec3f(10, 8, -12), 1, orange));
-    
 
-    lights.push_back(Light(Vec3f(1,0, -12), 0.5));
-    lights.push_back(Light(Vec3f(0, 5, -10), 1));
+    lights.push_back(Light(Vec3f(5, 20, 2), 0.7));
+    lights.push_back(Light(Vec3f(-5, 20, 4), 1.0));
   }
+
   else if (sceneId == 2)
   {
+    spheres.push_back(Sphere(Vec3f(-5, 0, -5), 3, ivory));
+    spheres.push_back(Sphere(Vec3f(4, 2, -4), 2, orange));
+
+    lights.push_back(Light(Vec3f(1, 3, -4), 0.5));
+    lights.push_back(Light(Vec3f(0, 5, -6), 1));
   }
 
   else if (sceneId == 3)
@@ -152,8 +169,8 @@ int main(int argc, const char **argv)
   {
     for (size_t i = 0; i < settings.width; i++)
     {
-      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale;
-      float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale;
+      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale ;
+      float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale ;
 
       Vec3f dir = normalize(Vec3f(x, -y, -1));
       Vec3f temp = cast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);

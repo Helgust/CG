@@ -1,6 +1,6 @@
 /CMakeFiles
-/CMakeCache.txt
-/cmake_install.cmake
-/Makefile
-/rt
-/zout.bmp
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+rt
+/build

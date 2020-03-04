@@ -34,9 +34,11 @@ struct Light {
 
 
 struct Material {
-    Material(const Vec3f &color) : diffuse_color(color) {}
-    Material() : diffuse_color() {}
+    Material(const Vec3f &color ,const Vec2f &a , const float &s) : diffuse_color(color) , albedo(a), specular(s) {}
+    Material() : diffuse_color(), albedo(1,0), specular() {}
     Vec3f diffuse_color;
+    Vec2f albedo ;
+    float specular;
 };
 
 
