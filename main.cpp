@@ -43,9 +43,9 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
     }
   }
 
-/*   float checkerboard_dist = std::numeric_limits<float>::max();
+   float checkerboard_dist = std::numeric_limits<float>::max();
 
-  if (fabs(dir.y) > 1e-3)
+  /*if (fabs(dir.y) > 1e-3)
   {
     float d = -(orig.y + 4) / dir.y; // the checkerboard plane has equation y = -4
     Vec3f pt = orig + dir * d;
@@ -62,37 +62,43 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
   return spheres_dist < 1000;
 }
 
-Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, const Settings &settings)
+
+Vec3f newcast_ray(
+      const Vec3f &orig, const Vec3f &dir,
+      const std::vector<Sphere> &spheres,
+      const std::vector<Light> &lights,
+      const Settings &settings)
 {
-  Vec3f point, N;
-  Material material;
-
-  if (!scene_intersect(orig, dir, spheres, point, N, material))
-  {
-    return settings.backgroundColor; // background color
-  }
-
-  float diffuse_light_intensity = 0;
-  float specular_light_intensity = 0;
-  for (size_t i = 0; i < lights.size(); i++)
-  {
-    Vec3f light_dir = normalize(lights[i].position - point);
-
-    float light_distance = norma(lights[i].position - point);
-
-    Vec3f shadow_orig = dotProduct(light_dir,N) < 0 ? point - N * 1e-3 : point + N * 1e-3; // checking if the point lies in the shadow of the lights[i]
-    Vec3f shadow_pt, shadow_N;
-    Material tmpmaterial;
-
-    if (scene_intersect(shadow_orig, light_dir, spheres, shadow_pt, shadow_N, tmpmaterial) && norma(shadow_pt - shadow_orig)< light_distance)
-      continue;
+  //if (depth > options.maxDepth) return options.backgroundColor; 
     
-    diffuse_light_intensity += lights[i].intensity * std::max(0.f, dotProduct(light_dir, N));
-    Vec3f R = reflect(light_dir, N);
-    specular_light_intensity += lights[i].intensity * powf(std::max(0.f, dotProduct(R, -dir)), material.specular);
-  }
-  //return material.diffuse_color * diffuse_light_intensity * material.albedo.x + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo.y;
-   return Vec3f(1., 1., 1.)*specular_light_intensity*material.albedo.y;
+    Vec3f hit_point, N;
+    Material material; 
+    Vec3f PhongColor = settings.backgroundColor; 
+    if (scene_intersect(orig, dir, spheres, hit_point, N , material)) 
+    {
+      Vec3f diffuse = 0, specular = 0; 
+      Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-3 : hit_point - N * 1e-3;
+
+      for (uint32_t i = 0; i < lights.size(); ++i) 
+      {
+        Vec3f light_dir = normalize(lights[i].position - hit_point);
+        Vec3f shadow_point, shadow_N;
+        Material temp_material;
+        bool inShadow = scene_intersect(shadow_orig, light_dir, spheres, shadow_point, shadow_N,temp_material) && 
+                        (std::numeric_limits<float>::max() * std::numeric_limits<float>::max()) < dotProduct(light_dir,light_dir);
+        diffuse += (1 - inShadow) * lights[i].intensity * std::max(0.f, dotProduct(light_dir, N));
+        Vec3f R = reflect(-light_dir, N);
+        specular += powf(std::max(0.f, -dotProduct(R, dir)), material.specular) * lights[i].intensity;
+      }
+      PhongColor = diffuse * material.diffuse_color *0.8 + specular * 0.2; //Kd = 0.8 Ks = 0.2 
+      //PhongColor = specular*0.2; //Kd = 0.8 Ks = 0.2 
+    }
+    else
+    {
+      PhongColor = settings.backgroundColor;
+    }
+    
+      return PhongColor; 
 }
 
 int main(int argc, const char **argv)
@@ -106,7 +112,7 @@ int main(int argc, const char **argv)
 
     if (key.size() > 0 && key[0] == '-')
     {
-      if (i != argc - 1) // not last argument
+      if (i != argc - 1) // not last argumen
       {
         cmdLineParams[key] = argv[i + 1];
         i++;
@@ -126,25 +132,32 @@ int main(int argc, const char **argv)
 
   Settings settings;
 
-  settings.width = 1024;
-  settings.height = 768;
+   /* settings.width = 16;
+  settings.height = 16; */ 
+
+   settings.width = 1920;
+  settings.height = 1080;
+
   settings.fov = 90;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.2, 0.7, 0.8);
 
-  Material orange(Vec3f(1, 0.4, 0.3), Vec2f(0.6, 0.3), 50.0);
-  Material ivory(Vec3f(0.4, 0.4, 0.3), Vec2f(0.9, 0.1), 20.0);
+  Material orange(Vec3f(1, 0.4, 0.3), Vec3f(0.18, 0.18, 0.18), 10.0);
+  Material ivory(Vec3f(0.4, 0.4, 0.3), Vec3f(1, 1, 1), 4.0);
 
   std::vector<Sphere> spheres;
   std::vector<Light> lights;
 
   if (sceneId == 1)
   {
-    spheres.push_back(Sphere(Vec3f(-3, -6, -11), 3, ivory));
-    spheres.push_back(Sphere(Vec3f(0, 0, -12), 2, orange));
+    spheres.push_back(Sphere(Vec3f(0, -3, -12), 4, ivory));
+    spheres.push_back(Sphere(Vec3f(0, 5, -12), 2, orange));
+    spheres.push_back(Sphere(Vec3f(-5, -3, -12), 2, orange));
 
-    lights.push_back(Light(Vec3f(5, 20, 2), 0.7));
-    lights.push_back(Light(Vec3f(-5, 20, 4), 1.0));
+     lights.push_back(Light(Vec3f(-20, 70, 20), 0.5));
+     lights.push_back(Light(Vec3f(30, 50, -12), 1));
+    // lights.push_back(Light(Vec3f(0, 0, 200), 3)); 
+     
   }
 
   else if (sceneId == 2)
@@ -173,7 +186,7 @@ int main(int argc, const char **argv)
       float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale ;
 
       Vec3f dir = normalize(Vec3f(x, -y, -1));
-      Vec3f temp = cast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
+      Vec3f temp = newcast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
       ;
       float max = std::max(temp.x, std::max(temp.y, temp.z));
       if (max > 1)
