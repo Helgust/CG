@@ -21,7 +21,7 @@ float deg2rad(const float &deg)
 { return deg * M_PI / 180; }
 
 
-Vec3f reflect(const Vec3f &I,  Vec3f &N) 
+Vec3f reflect(const Vec3f &I, const Vec3f &N) 
 { 
     return I -  ((N* dotProduct(N,I) * 2)); 
 } 
@@ -51,9 +51,9 @@ void fresnel(const Vec3f &I, const Vec3f &N, const float &ior, float &kr)
     } 
     // As a consequence of the conservation of energy, transmittance is given by:
     // kt = 1 - kr;
-}
+} 
 
-Vec3f refract(const Vec3f &I, const Vec3f &N, const float &ior) 
+Vec3f old_refract(const Vec3f &I, const Vec3f &N, const float &ior) 
 { 
     float cosi = clamp(-1, 1, dotProduct(I, N)); 
     float etai = 1, etat = ior; 
@@ -61,7 +61,21 @@ Vec3f refract(const Vec3f &I, const Vec3f &N, const float &ior)
     if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; } 
     float eta = etai / etat; 
     float k = 1 - eta * eta * (1 - cosi * cosi); 
-    return k < 0 ? 0 : n * I * eta + (eta * cosi - sqrtf(k)); 
-} 
+    return k < 0 ? 0 : I *eta + n*(eta * cosi - sqrtf(k)); 
+}  
+
+Vec3f refract(const Vec3f &I, const Vec3f &N, const float &refractive_index) 
+{ // Snell's law
+    float cosi = - std::max(-1.f, std::min(1.f, dotProduct(I,N)));
+    float etai = 1, etat = refractive_index;
+    Vec3f n = N;
+    if (cosi < 0) { // if the ray is inside the object, swap the indices and invert the normal to get the correct result
+    cosi = -cosi;
+        std::swap(etai, etat); n = -N;
+    }
+    float eta = etai / etat;
+    float k = 1 - eta*eta*(1 - cosi*cosi);
+    return k < 0 ? Vec3f(0,0,0) : I*eta + n*(eta * cosi - sqrtf(k));
+}
 
 #endif

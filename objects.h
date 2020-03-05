@@ -32,15 +32,15 @@ struct Light {
     float intensity;
 };
 
-enum MaterialType { DIFFUSE, REFLECTION_AND_REFRACTION, REFLECTION };
+enum MaterialType { DIFFUSE, REFLECTION_AND_REFRACTION, REFLECTION , REFRACTION, DIFFUSE_REFLECTION,UNIVERSAL};
 
 struct Material {
-    Material(const Vec3f &color ,const MaterialType &m , const float &s, const float &i) : diffuse_color(color), materialType(m), specular(s), ior(i) {}
-    Material() : diffuse_color(), materialType(DIFFUSE), specular(), ior() {}
+    Material(const Vec3f &color ,const MaterialType &m , const float &s, const float &r) : diffuse_color(color), materialType(m), specular(s),refract(r) {}
+    Material() : diffuse_color(), materialType(DIFFUSE), specular(), refract() {}
     Vec3f diffuse_color;
     MaterialType materialType;
     float specular;
-    float ior;
+    float refract;
 };
 
 
