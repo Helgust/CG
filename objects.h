@@ -27,9 +27,10 @@ bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, f
 }
 
 struct Light {
-    Light(const Vec3f &p, const float &i) : position(p), intensity(i) {}
+    Light(const Vec3f &p, const float &i ,const Vec3f &c) : position(p), intensity(i), color(c) {}
     Vec3f position;
     float intensity;
+    Vec3f color;
 };
 
 enum MaterialType { DIFFUSE, REFLECTION_AND_REFRACTION, REFLECTION , REFRACTION, DIFFUSE_REFLECTION,UNIVERSAL};

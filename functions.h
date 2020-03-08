@@ -78,4 +78,13 @@ Vec3f refract(const Vec3f &I, const Vec3f &N, const float &refractive_index)
     return k < 0 ? Vec3f(0,0,0) : I*eta + n*(eta * cosi - sqrtf(k));
 }
 
+float jitterMatrix[4 * 2] = {
+    -1.0/4.0,  3.0/4.0,
+     3.0/4.0,  1.0/3.0,
+    -3.0/4.0, -1.0/4.0,
+     1.0/4.0, -3.0/4.0,
+};
+
+
+
 #endif
