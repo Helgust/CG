@@ -26,7 +26,7 @@ struct Settings
   int maxDepth;
   Vec3f backgroundColor;
   float bias;
-  int AA;
+  float AA;
 };
 
 bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphere> &spheres, Vec3f &hit, Vec3f &N, Material &material)
@@ -231,14 +231,14 @@ int main(int argc, const char **argv)
 
   Settings settings;
 
-  settings.width = 512;
-  settings.height = 512;
+  /* settings.width = 512;
+  settings.height = 512; */
 
   /*   settings.width = 1024;
   settings.height = 796; */
 
-  /* settings.width = 1920;
-  settings.height = 1080; */
+   settings.width = 1920;
+  settings.height = 1080;
 
   /* settings.width = 3840;
   settings.height = 2160;  */
@@ -246,6 +246,7 @@ int main(int argc, const char **argv)
   settings.fov = 90;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.2, 0.7, 0.8); // light blue Vec3f(0.2, 0.7, 0.8);
+  settings.AA = 16;
 
   Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 5.0, 1.5);
   Material ivory(Vec3f(0.4, 0.4, 0.3), DIFFUSE, 50.0, 1.5);
@@ -297,10 +298,39 @@ int main(int argc, const char **argv)
   {
     for (size_t i = 0; i < settings.width; i++)
     {
-      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale;
-      float y = (1 - 2 * (j + 0.5) / (float)settings.height) * scale;
+      Vec3f temp = Vec3f(0,0,0);
+        for (size_t k = 0; k < settings.AA; k++)
+        {
+            float x = (2 * (i + 0.5 + k*0.3) / (float)settings.width -  1) * imageAspectRatio * scale ;
+            float y = (2 * (j + 0.5 + k*0.3) / (float)settings.height - 1) * scale;
 
-      Vec3f dir = normalize(Vec3f(x, -y, -1));
+            Vec3f dir = normalize(Vec3f(x, y, -1));
+            temp += newcast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
+        }
+      temp = temp * (1.0 / settings.AA);
+      float max = std::max(temp.x, std::max(temp.y, temp.z));
+      if (max > 1)
+        temp = temp * (1. / max);
+      image[i + j * settings.width] = (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.z))) << 16 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.y))) << 8 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.x)));
+    }
+  }
+
+
+
+
+/*   std::vector<uint32_t> image(settings.height * settings.width);
+
+  float scale = tan(deg2rad(settings.fov * 0.5));
+  float imageAspectRatio = settings.width / (float)settings.height;
+
+  for (size_t j = 0; j < settings.height; j++) // actual rendering loop
+  {
+    for (size_t i = 0; i < settings.width; i++)
+    {
+      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale;
+      float y = (2 * (j + 0.5) / (float)settings.height-1 ) * scale;
+
+      Vec3f dir = normalize(Vec3f(x, y, -1));
       Vec3f temp = newcast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
       ;
       float max = std::max(temp.x, std::max(temp.y, temp.z));
@@ -308,7 +338,7 @@ int main(int argc, const char **argv)
         temp = temp * (1. / max);
       image[i + j * settings.width] = (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.z))) << 16 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.y))) << 8 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.x)));
     }
-  }
+  } */
 
   SaveBMP(outFilePath.c_str(), image.data(), settings.width, settings.height);
 
