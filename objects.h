@@ -2,6 +2,7 @@
 #define Objects_h
 
 #include <cmath>
+#include <limits>
 #include <vector>
 #include <iostream>
 #include <random> 
@@ -90,6 +91,72 @@ class Sphere : public Object
     Vec3f center;
     float radius;
     Material material;
+
+};
+
+class Cylinder : public Object 
+{
+    public:
+	Vec3f center;
+	Vec3f direction;
+	float radius;
+	float height;
+    Material material;
+
+    bool intersection(const Vec3f &orig, const Vec3f &dir, float &tnear) const
+    {
+		
+        const double SELF_AVOID_T = 1e-2;
+
+
+        Vec3f L = orig - center;
+
+		const float a = 1 - dotProduct(dir,dir)*dotProduct(dir,dir);
+		//const float b = 2 * (rel_origin.dot(ray.direction) - directions_dot *rel_origin.dot(direction));
+        const float b = 2 * ( dotProduct(L,dir)-dotProduct(dir,dir)*dotProduct(L,dir));
+		//const float c = rel_origin.dot(rel_origin) -rel_origin.dot(direction)* rel_origin.dot(direction) - radius * radius;
+        const float c = dotProduct(L,L) - dotProduct(L,dir) * dotProduct(L,dir) - radius * radius ;
+		double delta = b * b - 4 * a * c;
+
+		if (delta < 0) { 
+			tnear = std::numeric_limits<float>::max(); // no intersection, at 'infinity'
+			return false;
+		}
+
+		const float sqrt_delta_2a = sqrt(delta) / (2 * a);
+		float t1 = (-b) / (2*a);
+		const float t2 = t1 + sqrt_delta_2a;
+		t1 -= sqrt_delta_2a;
+
+		if (t2 < SELF_AVOID_T) { // the cylinder is behind us
+			tnear = std::numeric_limits<float>::max(); // no intersection, at 'infinity'
+			return false;
+		}
+        float center_proj = dotProduct(center,dir);
+        float t1_proj =  dotProduct(dir,(orig + dir*t1));
+		if (t1 >= SELF_AVOID_T && t1_proj > center_proj && t1_proj < center_proj+height) {
+			tnear = t1;
+			return true;
+		}
+        float  t2_proj =  dotProduct(dir,(orig + dir*t2));
+		if (t2 >= SELF_AVOID_T && t2_proj > center_proj && t2_proj < center_proj+height) {
+			tnear = t2;
+			return true;
+		}
+		tnear = std::numeric_limits<float>::max(); // no intersection, at 'infinity'
+		return false;
+	}
+
+    void getData(
+        const Vec3f &hit_point, 
+        Vec3f &N,
+        Material &mat ) const
+    {
+        N = normalize(hit_point - center); 
+        mat = material;
+    }
+
+
 
 };
 

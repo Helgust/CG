@@ -10,3 +10,5 @@ add_executable(rt main.cpp Bitmap.cpp)
 
 target_link_libraries(rt ${ALL_LIBS} )
 
+set (CMAKE_CXX_FLAGS "-fopenmp")
+

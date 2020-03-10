@@ -204,7 +204,7 @@ Vec3f newcast_ray(
 
 int main(int argc, const char **argv)
 {
-  clock_t begin = clock();
+
   std::unordered_map<std::string, std::string> cmdLineParams;
 
   for (int i = 0; i < argc; i++)
@@ -231,24 +231,27 @@ int main(int argc, const char **argv)
   if (cmdLineParams.find("-scene") != cmdLineParams.end())
     sceneId = atoi(cmdLineParams["-scene"].c_str());
 
+  int threads = 1;
+  if (cmdLineParams.find("-threads") != cmdLineParams.end())
+    threads = atoi(cmdLineParams["-threads"].c_str());
+
   Settings settings;
 
 /*    settings.width = 512;
   settings.height = 512; */ 
 
-   settings.width = 1024;
-  settings.height = 796; 
+/*     settings.width = 1024;
+  settings.height = 796;  */
 
-   /*  settings.width = 1920;
+     settings.width = 1920;
   settings.height = 1080; 
- */
-  /*   settings.width = 3840;
-  settings.height = 2160; */   
+  /*    settings.width = 3840;
+  settings.height = 2160;  */   
 
   settings.fov = 90;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
-  settings.AA = 2;
+  settings.AA = 1;
 
   Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 10.0, 1.5);
   Material red(Vec3f(0.40, 0.0, 0.0), GLOSSY, 20.0, 1.5);
@@ -300,6 +303,8 @@ int main(int argc, const char **argv)
   float scale = tan(deg2rad(settings.fov * 0.5));
   float imageAspectRatio = settings.width / (float)settings.height;
 
+  std:: cout << threads << std:: endl;
+  #pragma omp parallel for num_threads (threads)
   for (size_t j = 0; j < settings.height; j++) // actual rendering loop
   {
     for (size_t i = 0; i < settings.width; i++)
@@ -326,8 +331,6 @@ int main(int argc, const char **argv)
   SaveBMP(outFilePath.c_str(), image.data(), settings.width, settings.height);
 
   std::cout << "end." << std::endl;
-  clock_t end = clock();
-  double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-  std::cout << "runtime= " << time_spent << std::endl;
+
   return 0;
 }

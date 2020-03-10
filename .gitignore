@@ -1,6 +1,8 @@
 /CMakeFiles
+/.vscode
 CMakeCache.txt
 cmake_install.cmake
 Makefile
 rt
+speed_log.txt
 /build
