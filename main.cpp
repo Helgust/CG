@@ -6,6 +6,7 @@
 #include <ctime>
 
 #include <string>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
@@ -48,14 +49,17 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<Sphe
   if (fabs(dir.y) > 1e-3)
   {
 
+    float angle = deg2rad(0); // angel of rotatating
     float d = -(orig.y + 4) / dir.y; // the checkerboard plane has equation y = -4
     Vec3f pt = orig + dir * d;
-    if (d > 0 && fabs(pt.x) < 10 && pt.z < -10 && pt.z > -30 && d < spheres_dist)
+    if (d > 0 && d  < spheres_dist)
     {
       checkerboard_dist = d;
       hit = pt;
       N = Vec3f(0, 1, 0);
-      material.diffuse_color = (int(.5 * hit.x + 1000) + int(.5 * hit.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
+
+      material.specular =100000;
+      material.diffuse_color = (int(0.75 * (hit.x * cos(angle) + hit.z * sin(angle))) + int(0.75 * (hit.z* cos(angle) - hit.x*sin(angle)))) & 1 ? Vec3f(1, 1, 1) : Vec3f(0.0, 0.0, 0.0);
       material.diffuse_color = material.diffuse_color;
     }
   }
@@ -82,7 +86,7 @@ Vec3f newcast_ray(
     switch (material.materialType)
     {
 
-    case UNIVERSAL:
+    case GLOSSY:
     {
 
       float kr;
@@ -108,7 +112,7 @@ Vec3f newcast_ray(
         Vec3f R = reflect(-light_dir, N);
         specular += powf(std::max(0.f, -dotProduct(R, dir)), material.specular) * lights[i].intensity;
       }
-      PhongColor = diffuse * material.diffuse_color * 0.8 + specular * 0.2 + reflect_color * kr;
+      PhongColor = diffuse*material.diffuse_color*0.5   + material.diffuse_color*specular + material.diffuse_color*reflect_color*0.40;
       break;
     }
 
@@ -137,10 +141,6 @@ Vec3f newcast_ray(
 
     case DIFFUSE_REFLECTION:
     {
-      /* Vec3f reflect_dir = normalize(reflect(dir, N));
-      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-3 : hit_point + N * 1e-3; // offset the original point to avoid occlusion by the object itself
-      Vec3f reflect_color = newcast_ray(reflect_orig, reflect_dir, spheres, lights, settings, depth + 1); */
-
       Vec3f diffuse = 0, specular = 0;
       Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-3 : hit_point - N * 1e-3;
 
@@ -149,20 +149,23 @@ Vec3f newcast_ray(
       Vec3f reflect_color = newcast_ray(reflect_orig, reflect_dir, spheres, lights, settings, depth + 1);
       for (uint32_t i = 0; i < lights.size(); ++i)
       {
+        Vec3f lightA = lights[i].color * lights[i].intensity;
         Vec3f light_dir = normalize(lights[i].position - hit_point);
         float light_dist = norma(lights[i].position - hit_point);
         Vec3f shadow_point, shadow_N;
         Material temp_material;
         bool inShadow = scene_intersect(shadow_orig, light_dir, spheres, shadow_point, shadow_N, temp_material) &&
                         norma(shadow_point - shadow_orig) < light_dist;
-        diffuse += (1 - inShadow) * lights[i].intensity * std::max(0.f, dotProduct(light_dir, N));
+        diffuse += lightA * (1 - inShadow) * std::max(0.f, dotProduct(light_dir, N));
         Vec3f R = reflect(-light_dir, N);
-        specular += powf(std::max(0.f, -dotProduct(R, dir)), material.specular) * lights[i].intensity;
+        specular += lightA * powf(std::max(0.f, -dotProduct(R, dir)), material.specular);
       }
-
-      PhongColor += reflect_color * 0.2 * material.diffuse_color + 0.5; //Kd = 0.8 Ks = 0.2;
+      PhongColor = diffuse * material.diffuse_color * 0.8 + specular * 0.2; //Kd = 0.8 Ks = 0.2
+      //PhongColor = specular*0.3; //Kd = 0.8 Ks = 0.2 albedo[0] + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo[1] + reflect_color*material.albedo[2];
       break;
     }
+
+
 
     default:
     {
@@ -231,28 +234,31 @@ int main(int argc, const char **argv)
 
   Settings settings;
 
-  /* settings.width = 512;
-  settings.height = 512; */
+/*    settings.width = 512;
+  settings.height = 512; */ 
 
-  /*   settings.width = 1024;
-  settings.height = 796; */
+   settings.width = 1024;
+  settings.height = 796; 
 
-   settings.width = 1920;
-  settings.height = 1080;
-
-  /* settings.width = 3840;
-  settings.height = 2160;  */
+   /*  settings.width = 1920;
+  settings.height = 1080; 
+ */
+  /*   settings.width = 3840;
+  settings.height = 2160; */   
 
   settings.fov = 90;
   settings.maxDepth = 4;
-  settings.backgroundColor = Vec3f(0.2, 0.7, 0.8); // light blue Vec3f(0.2, 0.7, 0.8);
-  settings.AA = 16;
+  settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
+  settings.AA = 2;
 
-  Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 5.0, 1.5);
+  Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 10.0, 1.5);
+  Material red(Vec3f(0.40, 0.0, 0.0), GLOSSY, 20.0, 1.5);
   Material ivory(Vec3f(0.4, 0.4, 0.3), DIFFUSE, 50.0, 1.5);
-  Material gold(Vec3f(0.5, 0.4, 0.1), UNIVERSAL, 90.0, 1.5);
-  Material mirror(Vec3f(0.0, 10.0, 0.8), REFLECTION_AND_REFRACTION, 1.0, 1.5);
+  Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 20.0, 1.5);
+  Material mirror(Vec3f(0.0, 10.0, 0.8), REFLECTION, 1.0, 1.5);
+  Material glass(Vec3f(0.0, 10.0, 0.8), REFLECTION_AND_REFRACTION, 1.0, 1.5);
 
+  std::vector<std::unique_ptr<Object>> objects; 
   std::vector<Sphere> spheres;
   std::vector<Light> lights;
 
@@ -269,8 +275,8 @@ int main(int argc, const char **argv)
 
   else if (sceneId == 2)
   {
-    spheres.push_back(Sphere(Vec3f(-5, 0, -5), 3, ivory));
-    spheres.push_back(Sphere(Vec3f(4, 2, -4), 2, orange));
+    objects.push_back(std::unique_ptr<Object> (new Sphere (Vec3f(-5, 0, -5), 3, ivory)));
+    objects.push_back(std::unique_ptr<Object> ( new Sphere(Vec3f(4, 2, -4), 2, orange)));
 
     lights.push_back(Light(Vec3f(1, 3, -4), 0.5, Vec3f(1, 1, 1)));
     lights.push_back(Light(Vec3f(0, 5, -6), 1, Vec3f(1, 1, 1)));
@@ -278,15 +284,16 @@ int main(int argc, const char **argv)
 
   else if (sceneId == 3)
   {
-    spheres.push_back(Sphere(Vec3f(7, 5, -18), 4, orange));
-    spheres.push_back(Sphere(Vec3f(2, 0, -5), 1, mirror));
-    spheres.push_back(Sphere(Vec3f(-3, 0, -20), 6, ivory));
-    spheres.push_back(Sphere(Vec3f(-3, 6, -12), 2, gold));
-    spheres.push_back(Sphere(Vec3f(15, -2, -18), 3, orange));
+    spheres.push_back(Sphere(Vec3f(-2, 0, -2), 0.5, red));
+    spheres.push_back(Sphere(Vec3f(2, 0, -5), 1, glass));
+    spheres.push_back(Sphere(Vec3f(-3, 7, -20), 6, gold));
+    spheres.push_back(Sphere(Vec3f(-3, 6, -12), 2, ivory));
+    spheres.push_back(Sphere(Vec3f(15, -2, -18), 3, orange)); 
+    spheres.push_back(Sphere(Vec3f(1.25, 12, -40), 10, mirror));
 
     lights.push_back(Light(Vec3f(-20, 20, 20), 0.8, Vec3f(1, 1, 1)));
-    lights.push_back(Light(Vec3f(30, 50, -25), 1.2, Vec3f(1, 1, 1)));
-    lights.push_back(Light(Vec3f(30, 20, 30), 2.2, Vec3f(1, 1, 1)));
+    //lights.push_back(Light(Vec3f(30, 50, -25), 1.2, Vec3f(1, 1, 1)));
+    lights.push_back(Light(Vec3f(30, 20, -20), 2.3, Vec3f(1, 1, 1)));
   }
 
   std::vector<uint32_t> image(settings.height * settings.width);
@@ -301,8 +308,8 @@ int main(int argc, const char **argv)
       Vec3f temp = Vec3f(0,0,0);
         for (size_t k = 0; k < settings.AA; k++)
         {
-            float x = (2 * (i + 0.5 + k*0.3) / (float)settings.width -  1) * imageAspectRatio * scale ;
-            float y = (2 * (j + 0.5 + k*0.3) / (float)settings.height - 1) * scale;
+            float x = (2 * (i + 0.5 + k*0.25) / (float)settings.width -  1) * imageAspectRatio * scale ;
+            float y = (2 * (j + 0.5 - k*0.25) / (float)settings.height - 1) * scale;
 
             Vec3f dir = normalize(Vec3f(x, y, -1));
             temp += newcast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
@@ -316,29 +323,6 @@ int main(int argc, const char **argv)
   }
 
 
-
-
-/*   std::vector<uint32_t> image(settings.height * settings.width);
-
-  float scale = tan(deg2rad(settings.fov * 0.5));
-  float imageAspectRatio = settings.width / (float)settings.height;
-
-  for (size_t j = 0; j < settings.height; j++) // actual rendering loop
-  {
-    for (size_t i = 0; i < settings.width; i++)
-    {
-      float x = (2 * (i + 0.5) / (float)settings.width - 1) * imageAspectRatio * scale;
-      float y = (2 * (j + 0.5) / (float)settings.height-1 ) * scale;
-
-      Vec3f dir = normalize(Vec3f(x, y, -1));
-      Vec3f temp = newcast_ray(Vec3f(0, 0, 0), dir, spheres, lights, settings);
-      ;
-      float max = std::max(temp.x, std::max(temp.y, temp.z));
-      if (max > 1)
-        temp = temp * (1. / max);
-      image[i + j * settings.width] = (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.z))) << 16 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.y))) << 8 | (uint32_t)(255 * std::max(0.f, std::min(1.f, temp.x)));
-    }
-  } */
 
   SaveBMP(outFilePath.c_str(), image.data(), settings.width, settings.height);
 
