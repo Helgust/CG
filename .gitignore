@@ -5,4 +5,5 @@ cmake_install.cmake
 Makefile
 rt
 speed_log.txt
+cylinder caps.c
 /build

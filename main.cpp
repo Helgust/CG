@@ -58,7 +58,7 @@ bool scene_intersect(const Vec3f &orig, const Vec3f &dir, const std::vector<std:
       N = Vec3f(0, 1, 0);
 
       material.specular =100000;
-      material.diffuse_color = (int(0.75 * (hit.x * cos(angle) + hit.z * sin(angle))) + int(0.75 * (hit.z* cos(angle) - hit.x*sin(angle)))) & 1 ? Vec3f(1, 1, 1) : Vec3f(0.0, 0.0, 0.0);
+       material.diffuse_color = (int(.75 * hit.x + 1000) + int(.75 * hit.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
       material.diffuse_color = material.diffuse_color;
     }
   }
@@ -240,21 +240,22 @@ int main(int argc, const char **argv)
 /*    settings.width = 512;
   settings.height = 512; */ 
 
-/*     settings.width = 1024;
-  settings.height = 796;  */
+     settings.width = 1024;
+  settings.height = 796;  
 
-     settings.width = 1920;
-  settings.height = 1080; 
-  /*    settings.width = 3840;
-  settings.height = 2160;  */   
+/*      settings.width = 1920;
+  settings.height = 1080; */ 
+/*       settings.width = 3840;
+  settings.height = 2160; */    
 
   settings.fov = 90;
   settings.maxDepth = 4;
   settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
   settings.AA = 1;
 
-  Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 10.0, 1.5);
-  Material red(Vec3f(0.40, 0.0, 0.0), GLOSSY, 20.0, 1.5);
+  Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 1.0, 1.5);
+  Material red(Vec3f(0.40, 0.0, 0.0), GLOSSY, 10.0, 1.5);
+  Material blue(Vec3f(0.0, 0.00, 0.4), GLOSSY, 20.0, 1.5);
   Material ivory(Vec3f(0.4, 0.4, 0.3), DIFFUSE, 50.0, 1.5);
   Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 20.0, 1.5);
   Material mirror(Vec3f(0.0, 10.0, 0.8), REFLECTION, 1.0, 1.5);
@@ -266,18 +267,18 @@ int main(int argc, const char **argv)
 
   if (sceneId == 1)
   {
-    /* spheres.push_back(Sphere(Vec3f(0, -3, -6), 3, ivory));
-    spheres.push_back(Sphere(Vec3f(0, 5, -12), 2, mirror));
-    spheres.push_back(Sphere(Vec3f(-10, -3, -12), 2, orange)); */
+    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,0, -7), 1 ,4, orange)));
+    //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
 
-    lights.push_back(Light(Vec3f(-20, 70, 20), 0.5, Vec3f(1, 0.4, 0.3)));
-    lights.push_back(Light(Vec3f(30, 50, -12), 1, Vec3f(1, 1, 1)));
-    lights.push_back(Light(Vec3f(0, 0, -12), 1.5, Vec3f(1, 1, 1)));
+
+     lights.push_back(Light(Vec3f(-20, 20, 20), 1.5, Vec3f(1, 1, 1)));
+    //lights.push_back(Light(Vec3f(30, 50, -25), 1.2, Vec3f(1, 1, 1)));
+    //lights.push_back(Light(Vec3f(30, 20, -20), 4.3, Vec3f(1, 1, 1)));
   }
 
   else if (sceneId == 2)
   {
-     objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
+    objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
     objects.push_back(std::unique_ptr<Object>( new  Sphere(Vec3f(4, 2, -4), 2, orange)));
 
     lights.push_back(Light(Vec3f(1, 3, -4), 0.5, Vec3f(1, 1, 1)));
@@ -292,6 +293,8 @@ int main(int argc, const char **argv)
     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-3, 6, -12), 2, ivory)));
     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(15, -2, -18), 3, orange))); 
     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(1.25, 12, -40), 10, mirror)));
+    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(5,0, -15), 1 ,6, red)));
+
 
     lights.push_back(Light(Vec3f(-20, 20, 20), 0.8, Vec3f(1, 1, 1)));
     //lights.push_back(Light(Vec3f(30, 50, -25), 1.2, Vec3f(1, 1, 1)));
@@ -316,7 +319,7 @@ int main(int argc, const char **argv)
             float y = (2 * (j + 0.5 - k*0.25) / (float)settings.height - 1) * scale;
 
             Vec3f dir = normalize(Vec3f(x, y, -1));
-            temp += newcast_ray(Vec3f(0, 0, 0), dir, objects, lights, settings);
+            temp += newcast_ray(Vec3f(0, 10, 4), dir, objects, lights, settings);
         }
       temp = temp * (1.0 / settings.AA);
       float max = std::max(temp.x, std::max(temp.y, temp.z));

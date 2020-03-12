@@ -17,6 +17,9 @@ Vec3f normalize(const Vec3f &v)
     return v; 
 } 
 
+Vec3f crossProduct(const Vec3f &a, const Vec3f &b) 
+    { return Vec3f(a.y * a.z - a.z * a.y, a.z * a.x - a.x * a.z, a.x * a.y - a.y * a.x); }
+
 float deg2rad(const float &deg) 
 { return deg * M_PI / 180; }
 
@@ -76,6 +79,20 @@ Vec3f refract(const Vec3f &I, const Vec3f &N, const float &refractive_index)
     float eta = etai / etat;
     float k = 1 - eta*eta*(1 - cosi*cosi);
     return k < 0 ? Vec3f(0,0,0) : I*eta + n*(eta * cosi - sqrtf(k));
+}
+
+
+bool intersectPlane(const Vec3f &n, const Vec3f &p0, const Vec3f &l0, const Vec3f &l, float &t) 
+{ 
+    // assuming vectors are all normalized
+    float denom = dotProduct(n, l); 
+    if (denom > 1e-6) { 
+        Vec3f p0l0 = p0 - l0; 
+        t = dotProduct(p0l0, n) / denom; 
+        return (t >= 0); 
+    } 
+ 
+    return false; 
 }
 
 
