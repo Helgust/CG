@@ -103,11 +103,75 @@ public:
     }
 };
 
+
+class Tetrahedron : public Object
+{
+public:
+    Vec3f A;
+    Vec3f B;
+    Vec3f C;
+    Material material;
+
+    Tetrahedron(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Material &m) : A(a), B(b), C(c), material(m){};
+
+};
+
+
+class Cone : public Object
+{
+public:
+    Vec3f center;
+    float radius;
+    float height;
+    Material material;
+
+    Cone(const Vec3f &c, const float &r, const float &h, const Material &m) : center(c), radius(r), height(h), material(m){};
+
+
+    bool intersection(const Vec3f &orig, const Vec3f &dir, float &tnear) const
+    {
+        float tangent = radius/height;
+        
+        float a = (dir.x * dir.x) + (dir.z * dir.z) - ((tangent * tangent)* (dir.y*dir.y));
+        float b = (2*(orig.x-center.x)*dir.x) + (2*(orig.z - center.z)*dir.z) + (2*tangent*tangent*(height - orig.y + center.y)*dir.y);
+        float c = ((orig.x - center.x)*(orig.x - center.x)) + ((orig.z - center.z)*(orig.z - center.z)) - (tangent*tangent*(( height - orig.y + center.y)*( height - orig.y + center.y)));
+        float t0, t1;
+
+        if (!solveQuadratic(a, b, c, t0, t1))
+        return false;
+
+        if (t0 < 0)
+            t0 = t1;
+        if (t0 < 0)
+        return false;
+
+        float r = orig.y + t0 * dir.y;
+        if (!((r >= center.y) and (r <= center.y + height)))
+        return false;
+
+        tnear = t0;
+
+        return true;
+    }
+
+    void getData(
+        const Vec3f &hit_point,
+        Vec3f &N,
+        Material &mat) const
+    {
+       float r = sqrt((hit_point.x-center.x)*(hit_point.x-center.x) + (hit_point.z-center.z)*(hit_point.z-center.z));
+        N = normalize(Vec3f (hit_point.x-center.x, r*(radius/height), hit_point.z-center.z));
+        mat = material;
+    }
+
+
+};
+
 class Cylinder : public Object
 {
 public:
     Vec3f center;
-    Vec3f dir_cyl;
+   // Vec3f dir_cyl; TODO will be pretty hard
     float radius;
     float height;
     Material material;
@@ -116,96 +180,58 @@ public:
 
     bool intersection(const Vec3f &orig, const Vec3f &dir, float &tnear) const
     {
-
-        /* float reserv = tnear;
-        Vec3f p0 = Vec3f(center.x,center.y+height,center.z);
-        if (!(intersectPlane((Vec3f(0,-1,0)), p0, orig, dir, tnear))) { 
-            return false;
-        } 
-         Vec3f p = orig + dir * tnear; 
-         Vec3f v = p - p0; 
-         float d2 = dotProduct(v, v);
-         if((sqrtf(d2)<=radius))
-         {
-             return true;
-         }
-
-         //tnear = reserv;
-        p0 = Vec3f(center.x,center.y,center.z);
-        if (!(intersectPlane((Vec3f(0,-1,0)), p0, orig, dir, tnear))) { 
-            return false;
-        } 
-            p = orig + dir * tnear;
-            v = p - p0;
-            d2 = dotProduct(v, v);
-         if((sqrtf(d2)<=radius))
-         {
-             return true;
-         }
-
-         tnear = reserv;  */
-
-
-
-
-
-
         float a = (dir.x * dir.x) + (dir.z * dir.z);
         float b = 2 * (dir.x * (orig.x - center.x) + dir.z * (orig.z - center.z));
         float c = (orig.x - center.x) * (orig.x - center.x) + (orig.z - center.z) * (orig.z - center.z) - (radius * radius);
 
-        float t0,t1;
-        Vec3f p_top = Vec3f(center.x,center.y+height,center.z);
+        float t0, t1;
+        Vec3f p_top = Vec3f(center.x, center.y + height, center.z);
 
         if (!solveQuadratic(a, b, c, t0, t1))
         {
-            if(intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear))
+            if (intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear))
             {
-                return intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear);
+                return intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear);
             }
             else
             {
-                return (intersectCylinderCapsBottom(Vec3f(0,1,0),center,orig,dir,tnear));
+                return (intersectCylinderCapsBottom(Vec3f(0, 1, 0), center, orig, dir, tnear));
             }
-            
-            
         }
-            //return false;
+        //return false;
 
         if (t0 < 0)
             t0 = t1;
         if (t0 < 0)
         {
-            if(intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear))
+            if (intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear))
             {
-                return intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear);
+                return intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear);
             }
             else
             {
-                return (intersectCylinderCapsBottom(Vec3f(0,1,0),center,orig,dir,tnear));
-            }
-        }
-            //return false;
-        
-        float r = orig.y + t0*dir.y;
-        if (!((r >= center.y) and (r <= center.y + height)))
-        {
-            if(intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear))
-            {
-                return intersectCylinderCapsTop(Vec3f(0,1,0),p_top,orig,dir,tnear);
-            }
-            else
-            {
-                return (intersectCylinderCapsBottom(Vec3f(0,1,0),center,orig,dir,tnear));
+                return (intersectCylinderCapsBottom(Vec3f(0, 1, 0), center, orig, dir, tnear));
             }
         }
         //return false;
-        
+
+        float r = orig.y + t0 * dir.y;
+        if (!((r >= center.y) and (r <= center.y + height)))
+        {
+            if (intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear))
+            {
+                return intersectCylinderCapsTop(Vec3f(0, 1, 0), p_top, orig, dir, tnear);
+            }
+            else
+            {
+                return (intersectCylinderCapsBottom(Vec3f(0, 1, 0), center, orig, dir, tnear));
+            }
+        }
+        //return false;
+
         tnear = t0;
 
-        return true; 
-        
-            
+        return true;
     }
 
     void getData(
@@ -213,59 +239,60 @@ public:
         Vec3f &N,
         Material &mat) const
     {
-        Vec3f top = Vec3f(center.x,center.y+height,center.z);
-        Vec3f axis = normalize(top-center);
-        float d1 = -dotProduct(axis,top);
-        if(fabs(dotProduct(hit_point,axis) + d1) <= 1e-9)
+        Vec3f top = Vec3f(center.x, center.y + height, center.z);
+        Vec3f axis = normalize(top - center);
+        float d1 = -dotProduct(axis, top);
+        if (fabs(dotProduct(hit_point, axis) + d1) <= 1e-9)
         {
-            N=axis;
+            N = axis;
         }
 
-        float d2 = -dotProduct(-axis,top);
-        if(fabs(dotProduct(hit_point,-axis) + d2) <= 1e-9)
+        float d2 = -dotProduct(-axis, top);
+        if (fabs(dotProduct(hit_point, -axis) + d2) <= 1e-9)
         {
-            N=-axis;
+            N = -axis;
         }
 
-        N = Vec3f(hit_point.x-center.x ,0,hit_point.z-center.z);
+        N = Vec3f(hit_point.x - center.x, 0, hit_point.z - center.z);
         /* Vec3f to_center = hit_point - center; 
         N = normalize((to_center-(Vec3f(0,1,0)*dotProduct(to_center,Vec3f(0,1,0))))); */
         mat = material;
     }
 
-    bool intersectCylinderCapsTop(const Vec3f &n, const Vec3f &p0, const Vec3f &l0, const Vec3f &l, float &t)const
+    bool intersectCylinderCapsTop(const Vec3f &n, const Vec3f &p0, const Vec3f &l0, const Vec3f &l, float &t) const
     {
-            float reserver = t;
-            Vec3f p1 = Vec3f(center.x,center.y+height,center.z);
-            if (!(intersectPlane((Vec3f(0,-1,0)), p0, l0, l, t))) { 
-                return false;
-            } 
-            Vec3f p = l0 + l * t; 
-            Vec3f v = p - p1; 
-            float d2 = dotProduct(v, v);
-            if((sqrtf(d2)<=radius))
-            {
-                return true;
-            }
+        float reserver = t;
+        Vec3f p1 = Vec3f(center.x, center.y + height, center.z);
+        if (!(intersectPlane((Vec3f(0, -1, 0)), p0, l0, l, t)))
+        {
             return false;
+        }
+        Vec3f p = l0 + l * t;
+        Vec3f v = p - p1;
+        float d2 = dotProduct(v, v);
+        if ((sqrtf(d2) <= radius))
+        {
+            return true;
+        }
+        return false;
     }
     bool intersectCylinderCapsBottom(const Vec3f &n, const Vec3f &p0, const Vec3f &l0, const Vec3f &l, float &t) const
     {
-            float reserver = t;
-            Vec3f p1 = Vec3f(center.x,center.y,center.z);
-            if (!(intersectPlane((Vec3f(0,1,0)), p0, l0, l, t))) { 
-                return false;
-            } 
-                Vec3f p = l0 + l * t;
-                Vec3f v = p - p1;
-                float d2 = dotProduct(v, v);
-            if((sqrtf(d2)<=radius))
-            {
-                return true;
-            }
-
+        float reserver = t;
+        Vec3f p1 = Vec3f(center.x, center.y, center.z);
+        if (!(intersectPlane((Vec3f(0, 1, 0)), p0, l0, l, t)))
+        {
             return false;
- 
+        }
+        Vec3f p = l0 + l * t;
+        Vec3f v = p - p1;
+        float d2 = dotProduct(v, v);
+        if ((sqrtf(d2) <= radius))
+        {
+            return true;
+        }
+
+        return false;
     }
 };
 

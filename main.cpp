@@ -267,7 +267,8 @@ int main(int argc, const char **argv)
 
   if (sceneId == 1)
   {
-    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,0, -7), 1 ,4, orange)));
+    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,0, -7), 1.5 ,4, orange)));
+    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 2 ,2, gold)));
     //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
 
 
@@ -319,7 +320,7 @@ int main(int argc, const char **argv)
             float y = (2 * (j + 0.5 - k*0.25) / (float)settings.height - 1) * scale;
 
             Vec3f dir = normalize(Vec3f(x, y, -1));
-            temp += newcast_ray(Vec3f(0, 10, 4), dir, objects, lights, settings);
+            temp += newcast_ray(Vec3f(0, 0, 0), dir, objects, lights, settings);
         }
       temp = temp * (1.0 / settings.AA);
       float max = std::max(temp.x, std::max(temp.y, temp.z));
