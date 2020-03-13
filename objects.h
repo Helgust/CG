@@ -42,7 +42,6 @@ enum MaterialType
     REFLECTION_AND_REFRACTION,
     REFLECTION,
     REFRACTION,
-    DIFFUSE_REFLECTION,
     GLOSSY
 };
 
@@ -339,6 +338,43 @@ public:
         }
 
         return false;
+    }
+};
+
+
+class Plane : public Object
+{
+    public:
+    Vec3f v0;
+    Vec3f n;
+    Material material;
+
+    Plane (const Vec3f &a, const Vec3f &nn ,const Material &m) : v0(a),n(nn),material(m){}
+
+    bool intersection(const Vec3f &orig, const Vec3f &dir, float &tnear) const
+    {
+        float t = dotProduct((v0 - orig) , n) / dotProduct(dir, n); 
+														
+        if (t < 1e-9)
+        {
+            return(false);	
+        }
+
+        tnear = t;
+        return (true);
+	
+    }  
+
+
+    void getData(
+        const Vec3f &hit_point,
+        Vec3f &N,
+        Material &mat) const
+    {
+        N = normalize(n);
+        mat = material;
+        mat.diffuse_color = (int(.75 * hit_point.x + 1000) + int(.75 * hit_point.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
+        mat.diffuse_color = mat.diffuse_color*0.5;
     }
 };
 
