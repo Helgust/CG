@@ -18,7 +18,7 @@ Vec3f normalize(const Vec3f &v)
 } 
 
 Vec3f crossProduct(const Vec3f &a, const Vec3f &b) 
-    { return Vec3f(a.y * a.z - a.z * a.y, a.z * a.x - a.x * a.z, a.x * a.y - a.y * a.x); }
+    { return Vec3f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y *  b.x); }
 
 float deg2rad(const float &deg) 
 { return deg * M_PI / 180; }
@@ -94,6 +94,8 @@ bool intersectPlane(const Vec3f &n, const Vec3f &p0, const Vec3f &l0, const Vec3
  
     return false; 
 }
+
+
 
 
 

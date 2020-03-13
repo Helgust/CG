@@ -250,7 +250,7 @@ int main(int argc, const char **argv)
 
   settings.fov = 90;
   settings.maxDepth = 4;
-  settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
+  settings.backgroundColor = Vec3f(0.2, 0.7, 0.8); // light blue Vec3f(0.2, 0.7, 0.8);
   settings.AA = 1;
 
   Material orange(Vec3f(1, 0.4, 0.3), DIFFUSE, 1.0, 1.5);
@@ -265,12 +265,21 @@ int main(int argc, const char **argv)
   //std::vector<Sphere> spheres;
   std::vector<Light> lights;
 
+   Vec3f ta = Vec3f(-2,-2,-4); 
+   Vec3f tb = Vec3f(-3,-14,-110); 
+   Vec3f tc = Vec3f(-4,-2,-4); 
+   Vec3f top = Vec3f(0,0,-6);
+
+
   if (sceneId == 1)
   {
-    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,0, -7), 1.5 ,4, orange)));
-    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 2 ,2, gold)));
-    //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
 
+
+    //objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,0, -7), 1.5 ,4, orange)));
+   // objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 2 ,2, gold)));
+   // objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, orange)));
+   objects.push_back(std::unique_ptr<Object>( new Triangle(Vec3f(0,1,0),Vec3f(0,1,-3),Vec3f(-3,1,0), orange)));
+    //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
 
      lights.push_back(Light(Vec3f(-20, 20, 20), 1.5, Vec3f(1, 1, 1)));
     //lights.push_back(Light(Vec3f(30, 50, -25), 1.2, Vec3f(1, 1, 1)));
@@ -320,7 +329,7 @@ int main(int argc, const char **argv)
             float y = (2 * (j + 0.5 - k*0.25) / (float)settings.height - 1) * scale;
 
             Vec3f dir = normalize(Vec3f(x, y, -1));
-            temp += newcast_ray(Vec3f(0, 0, 0), dir, objects, lights, settings);
+            temp += newcast_ray(Vec3f(0, 5, 10), dir, objects, lights, settings);
         }
       temp = temp * (1.0 / settings.AA);
       float max = std::max(temp.x, std::max(temp.y, temp.z));

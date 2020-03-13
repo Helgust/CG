@@ -104,16 +104,62 @@ public:
 };
 
 
-class Tetrahedron : public Object
+class Triangle : public Object
 {
-public:
-    Vec3f A;
-    Vec3f B;
-    Vec3f C;
+    public:
+    Vec3f v0;
+    Vec3f v1;
+    Vec3f v2;
     Material material;
 
-    Tetrahedron(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Material &m) : A(a), B(b), C(c), material(m){};
+    Triangle (const Vec3f &a,const Vec3f &b,const Vec3f &c, const Material &m) : v0(a),v1(b),v2(c),material(m){}
 
+    bool intersection(const Vec3f &orig, const Vec3f &dir, float &tnear) const
+    {
+        float a = v0.x - v1.x , b = v0.x - v2.x , c = dir.x , d = v0.x - orig.x;
+        float e = v0.y - v1.y , f = v0.y - v2.y , g = dir.y , h = v0.y - orig.y;
+        float i = v0.z - v1.z , j = v0.z - v2.z , k = dir.z , l = v0.z - orig.z;
+
+        float m = f * k - g * j, n = h * k - g * l, p = f * l - h * j;
+        float q = g * i - e * k, s = e * j - f * i;
+
+        float inv_denom = 1.0 / ( a * m + b * q + c * s);
+
+        float e1 = d * m - b * n - c * p;
+        float beta = e1 * inv_denom;
+
+        if(beta < 0.0)
+            return false;
+        float r = e * l - h * i;
+        float e2 = a * n + d * q + c * r;
+        float gamma = e2 * inv_denom;
+
+        if(gamma < 0.0)
+            return false;
+        if(beta + gamma > 1.0)
+            return false;
+        float e3 = a * p - b * r + d * s;
+        float t = e3 * inv_denom;
+
+        if (t < 1e-9)
+            return false;
+
+        tnear =t;
+
+        return true; 
+
+    }  
+
+
+    void getData(
+        const Vec3f &hit_point,
+        Vec3f &N,
+        Material &mat) const
+    {
+        N = crossProduct((v1 - v0),(v2 - v0));
+        N = normalize(N);
+        mat = material;
+    }
 };
 
 
