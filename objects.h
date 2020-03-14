@@ -351,7 +351,7 @@ class Plane : public Object
     {
         N = normalize(n);
         mat = material;
-        mat.diffuse_color = (int(.75 * hit_point.x + 1000) + int(.75 * hit_point.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
+        mat.diffuse_color = (int(.25 * hit_point.x + 1000) + int(.25 * hit_point.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
         mat.diffuse_color = mat.diffuse_color*0.5;
     }
 };

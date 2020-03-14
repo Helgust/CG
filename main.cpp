@@ -33,7 +33,6 @@ struct Settings
   float fov;
   int maxDepth;
   Vec3f backgroundColor;
-  float bias;
   float Kd;
   float Ks;
   float Kg;
@@ -83,7 +82,7 @@ Vec3f newcast_ray(
     float dist = 0;
     env.intersection(orig, dir, dist);
     Vec3f p = orig + dir * dist;
-    int a = (atan2(p.z, p.x) / (2 * M_PI) + .5) * settings.envmap_width;
+    int a = (atan2(p.z, p.x) / (-2 * M_PI) + .5) * settings.envmap_width;
     int b = acos(p.y / 1000) / M_PI * settings.envmap_height;
     return envmap[a + b * settings.envmap_width];
     //return settings.backgroundColor;
@@ -101,15 +100,15 @@ Vec3f newcast_ray(
       float kr;
       fresnel(dir, N, material.refract, kr);
       Vec3f reflect_dir = normalize(reflect(dir, N));
-      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-3 : hit_point + N * 1e-3; // offset the original point to avoid occlusion by the object itself
+      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-4 : hit_point + N * 1e-4; // offset the original point to avoid occlusion by the object itself
       Vec3f reflect_color = newcast_ray(reflect_orig, reflect_dir, objects, lights, envmap, settings, depth + 1);
      
 
       Vec3f diffuse = 0, specular = 0;
-      Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-3 : hit_point - N * 1e-3;
+      Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-4 : hit_point - N * 1e-4;
       for (uint32_t i = 0; i < lights.size(); ++i)
       {
-        Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-3 : hit_point - N * 1e-3;
+        Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-4 : hit_point - N * 1e-4;
         Vec3f light_dir, light_intensity;
         Vec3f shadow_pt, shadow_N;
         float light_dist;
@@ -128,6 +127,8 @@ Vec3f newcast_ray(
       PhongColor = diffuse*material.diffuse_color*settings.Kd +
                    material.diffuse_color*specular +
                     material.diffuse_color*reflect_color*settings.Kg;
+
+      //PhongColor = specular*0.2;
       break;
     }
 
@@ -137,8 +138,8 @@ Vec3f newcast_ray(
       fresnel(dir, N, material.refract, kr);
       Vec3f reflect_dir = normalize(reflect(dir, N));
       Vec3f refract_dir = normalize(refract(dir, N, material.refract));
-      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-3 : hit_point + N * 1e-3; // offset the original point to avoid occlusion by the object itself
-      Vec3f refract_orig = (dotProduct(refract_dir, N) < 0) ? hit_point - N * 1e-3 : hit_point + N * 1e-3;
+      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-4 : hit_point + N * 1e-4; // offset the original point to avoid occlusion by the object itself
+      Vec3f refract_orig = (dotProduct(refract_dir, N) < 0) ? hit_point - N * 1e-4 : hit_point + N * 1e-4;
       Vec3f reflect_color = newcast_ray(reflect_orig, reflect_dir, objects, lights, envmap, settings, depth + 1);
       Vec3f refract_color = newcast_ray(refract_orig, refract_dir, objects, lights, envmap, settings, depth + 1);
       PhongColor = reflect_color * kr + refract_color * (1 - kr);
@@ -149,7 +150,7 @@ Vec3f newcast_ray(
     case REFLECTION:
     {
       Vec3f reflect_dir = normalize(reflect(dir, N));
-      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-3 : hit_point + N * 1e-3; // offset the original point to avoid occlusion by the object itself
+      Vec3f reflect_orig = (dotProduct(reflect_dir, N) < 0) ? hit_point - N * 1e-4 : hit_point + N * 1e-4; // offset the original point to avoid occlusion by the object itself
       Vec3f reflect_color = newcast_ray(reflect_orig, reflect_dir, objects, lights, envmap, settings, depth + 1);
       PhongColor += reflect_color * 0.8;
       break;
@@ -162,11 +163,11 @@ Vec3f newcast_ray(
 
       Vec3f diffuse = 0, specular = 0;
       Vec3f shadowPointOrig = (dotProduct(dir, N) < 0) ? 
-                    hit_point + N * settings.bias : 
-                    hit_point - N * settings.bias; 
+                    hit_point + N * 1e-4 : 
+                    hit_point - N * 1e-4; 
       for (uint32_t i = 0; i < lights.size(); ++i)
       {
-        Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-3 : hit_point - N * 1e-3;
+        Vec3f shadow_orig = (dotProduct(dir, N) < 0) ? hit_point + N * 1e-4 : hit_point - N * 1e-4;
         Vec3f light_dir, light_intensity;
         Vec3f shadow_pt, shadow_N;
         float light_dist;
@@ -258,19 +259,18 @@ int main(int argc, const char **argv)
   /*    settings.width = 512;
   settings.height = 512; */
 
-  settings.width = 1024;
-  settings.height = 796;
+/*   settings.width = 1024;
+  settings.height = 796; */
 
-  /*      settings.width = 1920;
+/*        settings.width = 1920;
   settings.height = 1080; */
-  /*         settings.width = 3840;
-  settings.height = 2160; */
+          settings.width = 3840;
+  settings.height = 2160;
 
   settings.fov = 90;
-  settings.maxDepth = 4;
+  settings.maxDepth = 6;
   settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
   settings.AA = 1;
-  settings.bias = 1e-4;
   settings.Kd = 0.8;
   settings.Ks = 0.2;
   settings.Kg = 0.4;
@@ -281,7 +281,7 @@ int main(int argc, const char **argv)
   Material blue(Vec3f(0.0, 0.00, 0.4), GLOSSY, 5.0, 1.5);
   Material ivory(Vec3f(0.4, 0.4, 0.3), DIFFUSE, 5.0, 1.5);
   Material checker(Vec3f(0.0, 0.0, 0.0), GLOSSY, 5.0, 1.5);
-  Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 20.0, 1.5);
+  Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 8.0, 1.5);
   Material mirror(Vec3f(0.0, 10.0, 0.8), REFLECTION, 1.0, 1.5);
   Material glass(Vec3f(0.0, 10.0, 0.8), REFLECTION_AND_REFRACTION, 1.0, 1.5);
 
@@ -333,17 +333,17 @@ int main(int argc, const char **argv)
      objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(1.25, 12, -40), 10, mirror)));
 
     objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(5,0, -15), 1 ,6, red)));
-      objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 1 ,2, ivory)));
-     objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
+    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 1 ,2, ivory)));
+    objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
 
-    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, gold)));
-    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,top, gold)));
-      objects.push_back(std::unique_ptr<Object>( new Triangle(tc,tb,top, orange)));
-      objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,tc, orange)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, green)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,top, blue)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(tc,tb,top, orange)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,tc, orange)));
     
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 1, Vec3f(1, 1, 1))));
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1, Vec3f(1, 1, 1))));
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(30, 20, -20), 1.3, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.5, 0.5, 1), 1.0, Vec3f(0.89, 0.73, 0.53))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 0.5, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1.5, Vec3f(0.89, 0.73, 0.53))));
   }
 
   else if (sceneId == 4)
@@ -363,7 +363,7 @@ int main(int argc, const char **argv)
 
     //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 0.5, Vec3f(1, 1, 1))));
     //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1.5, Vec3f(0.89, 0.73, 0.53))));
-    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.4, 0, -1), 1.5, Vec3f(0.89, 0.73, 0.53))));
+    //lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.4, 0, -1), 1.5, Vec3f(0.89, 0.73, 0.53))));
     //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(20, 20, -13), 0.5, Vec3f(1, 1, 1))));
     //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(0, 0, 0), 2.5, Vec3f(1, 1, 1))));
   }
@@ -386,7 +386,7 @@ int main(int argc, const char **argv)
         float y = (2 * (j + 0.5 - k * 0.25) / (float)settings.height - 1) * scale;
 
         Vec3f dir = normalize(Vec3f(x, y, -1));
-        temp += newcast_ray(Vec3f(0, 0, 0), dir, objects, lights, envmap, settings);
+        temp += newcast_ray(Vec3f(0, 0, 1.5), dir, objects, lights, envmap, settings);
       }
       temp = temp * (1.0 / settings.AA);
       float max = std::max(temp.x, std::max(temp.y, temp.z));
