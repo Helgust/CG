@@ -17,6 +17,8 @@ public:
     Vec3f(float xx, float yy, float zz) : x(xx), y(yy), z(zz) {}
     Vec3f operator*(const float &r) const { return Vec3f(x * r, y * r, z * r); }
     Vec3f operator*(const Vec3f &v) const { return Vec3f(x * v.x, y * v.y, z * v.z); }
+    Vec3f operator/(const float &r) const { return Vec3f(x / r, y / r, z / r); }
+    Vec3f operator/(const Vec3f &v) const { return Vec3f(x / v.x, y / v.y, z / v.z); }
     Vec3f operator-(const Vec3f &v) const { return Vec3f(x - v.x, y - v.y, z - v.z); }
     Vec3f operator+(const Vec3f &v) const { return Vec3f(x + v.x, y + v.y, z + v.z); }
     Vec3f operator-() const { return Vec3f(-x, -y, -z); }
@@ -35,18 +37,6 @@ public:
     }
 
 
-};
-
-class Vec2f
-{
-public:
-    float x;
-    float y;
-    Vec2f() : x(0), y(0) {}
-    Vec2f(float xx) : x(xx), y(xx) {}
-    Vec2f(float xx, float yy) : x(xx), y(yy) {}
-    Vec2f operator*(const float &r) const { return Vec2f(x * r, y * r); }
-    Vec2f operator+(const Vec2f &v) const { return Vec2f(x + v.x, y + v.y); }
 };
 
 #endif

@@ -10,31 +10,7 @@
 #include "vectors.h"
 #include "functions.h"
 
-bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1)
-{
-    float discr = b * b - 4 * a * c;
-    if (discr < 0)
-        return false;
-    else if (discr == 0)
-        x0 = x1 = -0.5 * b / a;
-    else
-    {
-        float q = (b > 0) ? -0.5 * (b + sqrt(discr)) : -0.5 * (b - sqrt(discr));
-        x0 = q / a;
-        x1 = c / q;
-    }
-    if (x0 > x1)
-        std::swap(x0, x1);
-    return true;
-}
 
-struct Light
-{
-    Light(const Vec3f &p, const float &i, const Vec3f &c) : position(p), intensity(i), color(c) {}
-    Vec3f position;
-    float intensity;
-    Vec3f color;
-};
 
 enum MaterialType
 {
@@ -156,7 +132,8 @@ class Triangle : public Object
         Material &mat) const
     {
         N = crossProduct((v1 - v0),(v2 - v0));
-        N = normalize(N);
+        N = -normalize(N);
+        //N = Vec3f(0,1,0);
         mat = material;
     }
 };
@@ -299,6 +276,7 @@ public:
         }
 
         N = Vec3f(hit_point.x - center.x, 0, hit_point.z - center.z);
+        N = normalize (N);
         /* Vec3f to_center = hit_point - center; 
         N = normalize((to_center-(Vec3f(0,1,0)*dotProduct(to_center,Vec3f(0,1,0))))); */
         mat = material;
