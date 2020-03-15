@@ -335,11 +335,11 @@ class Plane : public Object
 														
         if (t < 1e-9)
         {
-            return(false);	
+            return false;	
         }
 
         tnear = t;
-        return (true);
+        return true;
 	
     }  
 
@@ -350,9 +350,21 @@ class Plane : public Object
         Material &mat) const
     {
         N = normalize(n);
-        mat = material;
-        mat.diffuse_color = (int(.25 * hit_point.x + 1000) + int(.25 * hit_point.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
-        mat.diffuse_color = mat.diffuse_color*0.5;
+
+        if ( dotProduct(N,Vec3f(0,0,-1))) // plane at XY
+        {
+            mat = material;
+            mat.diffuse_color = (int(.85 * hit_point.x + 1000)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
+            mat.diffuse_color = mat.diffuse_color*0.7;
+        }
+        else
+        {
+            mat = material;
+            mat.diffuse_color = (int(.25 * hit_point.x + 1000) + int(.25 * hit_point.z)) & 1 ? Vec3f(1, 1, 1) : Vec3f(0, 0, 0);
+            mat.diffuse_color = mat.diffuse_color*0.5;
+        }
+        
+        
     }
 };
 

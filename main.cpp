@@ -125,7 +125,7 @@ Vec3f newcast_ray(
         specular += light_intensity * powf(std::max(0.f, -dotProduct(reflectionDirection, dir)), material.specular) ;
       }
       PhongColor = diffuse*material.diffuse_color*settings.Kd +
-                   material.diffuse_color*specular +
+                   material.diffuse_color*specular *0.6 +
                     material.diffuse_color*reflect_color*settings.Kg;
 
       //PhongColor = specular*0.2;
@@ -230,22 +230,19 @@ int main(int argc, const char **argv)
 
   //std::string envFilePath = "../envmap4.jpg";
   settings.envmap_ineed = 0;
-  if (cmdLineParams.find("-envmap") != cmdLineParams.end())
-  {
-    settings.envmap_ineed = 1;
-    //envFilePath = cmdLineParams["-envmap"];
-  }
 
   std::vector<Vec3f> envmap;
 
   int n = -1;
-  unsigned char *pixmap = stbi_load("../envmap4.jpg", &settings.envmap_width, &settings.envmap_height, &n, 0);
+  unsigned char *pixmap = stbi_load("../envmap5.jpg", &settings.envmap_width, &settings.envmap_height, &n, 0);
   if (!pixmap || 3 != n)
   {
     std::cerr << "Error: can not load the environment map" << std::endl;
     return -1;
   }
   envmap = std::vector<Vec3f>(settings.envmap_width * settings.envmap_height);
+
+
 #pragma omp parallel for num_threads(threads)
   for (int j = settings.envmap_height - 1; j >= 0; j--)
   {
@@ -262,15 +259,14 @@ int main(int argc, const char **argv)
 /*   settings.width = 1024;
   settings.height = 796; */
 
-/*        settings.width = 1920;
-  settings.height = 1080; */
-          settings.width = 3840;
-  settings.height = 2160;
+/*   settings.width = 1920;
+  settings.height = 1080;  */
+/*           settings.width = 3840;
+  settings.height = 2160; */
 
   settings.fov = 90;
   settings.maxDepth = 6;
   settings.backgroundColor = Vec3f(0.0, 0.0, 0.0); // light blue Vec3f(0.2, 0.7, 0.8);
-  settings.AA = 1;
   settings.Kd = 0.8;
   settings.Ks = 0.2;
   settings.Kg = 0.4;
@@ -281,59 +277,62 @@ int main(int argc, const char **argv)
   Material blue(Vec3f(0.0, 0.00, 0.4), GLOSSY, 5.0, 1.5);
   Material ivory(Vec3f(0.4, 0.4, 0.3), DIFFUSE, 5.0, 1.5);
   Material checker(Vec3f(0.0, 0.0, 0.0), GLOSSY, 5.0, 1.5);
-  Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 8.0, 1.5);
+  Material checker2(Vec3f(0.0, 0.0, 0.0), DIFFUSE, 5.0, 1.5);
+  Material gold(Vec3f(0.5, 0.4, 0.1), GLOSSY, 6.0, 1.5);
   Material mirror(Vec3f(0.0, 10.0, 0.8), REFLECTION, 1.0, 1.5);
-  Material glass(Vec3f(0.0, 10.0, 0.8), REFLECTION_AND_REFRACTION, 1.0, 1.5);
+  Material glass(Vec3f(0.0, 0.0, 0.0), REFLECTION_AND_REFRACTION, 1.0, 1.5); // change color LOOK CAREFULLY
 
   std::vector<std::unique_ptr<Object>> objects;
   std::vector<std::unique_ptr<Light>> lights; 
 
-  Vec3f ta = Vec3f(-2, -4, -12);
-  Vec3f tb = Vec3f(-5, -4, -16);
-  Vec3f tc = Vec3f(1, -4, -16);
-  Vec3f top = Vec3f(-2, 2, -14);
 
   if (sceneId == 1)
   {
 
-    //objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(0,-4, -7), 1 ,4, blue)));
-    //objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 2 ,2, gold)));
-    //objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
+    Vec3f ta = Vec3f(-2, -4, -12);
+    Vec3f tb = Vec3f(-5, -4, -16);
+    Vec3f tc = Vec3f(1, -4, -16);
+    Vec3f top = Vec3f(-2, 2, -14);  
+    
+     settings.width = 1024;
+    settings.height = 796;
+    /* settings.width = 512;
+    settings.height = 512; */
+    settings.envmap_ineed = 0;
+    settings.AA = 1;
 
-    //objects.push_back(std::unique_ptr<Object>( new Triangle(Vec3f(0,0,0),Vec3f(-20,0,0),Vec3f(0,0,-20), gold)));
-    // objects.push_back(std::unique_ptr<Object>(new Triangle(ta, top, tc, orange)));
-    // objects.push_back(std::unique_ptr<Object>(new Triangle(ta, tb, top, orange)));
-    // objects.push_back(std::unique_ptr<Object>(new Triangle(tc, tb, top, orange)));
-    // objects.push_back(std::unique_ptr<Object>(new Triangle(ta, tb, tc, orange)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(5, 0, -8), 0.5, glass)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(3, 0, -8), 0.5, gold)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(1, 0, -8), 0.5, green)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-1, 0, -8), 0.5, ivory)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-3, 0, -8), 0.5, orange)));
+    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-5, 0, -8), 0.5, mirror)));
 
-    //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
 
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 1, Vec3f(1, 1, 1))));
-    // lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1, Vec3f(1, 1, 1))));
-    // lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(30, 20, -20), 2.3, Vec3f(1, 1, 1))));
+
+    objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,0, -16),Vec3f(0,0,1 ),checker2)));
+
+
+    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.8, 0.8, 0.65), 0.55, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(0, -0.8, 0.65), 0.55, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(0.8, 0.8, 0.65), 0.55, Vec3f(1, 1, 1))));
   }
 
   else if (sceneId == 2)
   {
-    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-5, 0, -5), 3, ivory)));
-    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(4, 2, -4), 2, gold)));
 
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 1, Vec3f(1, 1, 1))));
-    // lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1, Vec3f(1, 1, 1))));
-    // lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(30, 20, -20), 2.3, Vec3f(1, 1, 1))));
-  }
+    Vec3f ta = Vec3f(-2, -4, -12);
+    Vec3f tb = Vec3f(-5, -4, -16);
+    Vec3f tc = Vec3f(1, -4, -16);
+    Vec3f top = Vec3f(-2, 2, -14);  
 
-  else if (sceneId == 3)
-  {
-    objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(-2, 0, -2), 0.5, red)));
-    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(2, 0, -5), 1, glass)));
-    objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-3, 4, -20), 3, gold)));
-     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(-3, 6, -12), 2, ivory)));
-     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(15, -2, -18), 3, orange)));
-     objects.push_back(std::unique_ptr<Object>(new Sphere(Vec3f(1.25, 12, -40), 10, mirror)));
 
-    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(5,0, -15), 1 ,6, red)));
-    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-4,-4, -7), 1 ,2, ivory)));
+    settings.width = 1024;
+    settings.height = 796;
+    settings.envmap_ineed = 0;
+    settings.AA = 4;
+
+    
     objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
 
     objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, green)));
@@ -341,31 +340,38 @@ int main(int argc, const char **argv)
     objects.push_back(std::unique_ptr<Object>( new Triangle(tc,tb,top, orange)));
     objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,tc, orange)));
     
-    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.5, 0.5, 1), 1.0, Vec3f(0.89, 0.73, 0.53))));
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 0.5, Vec3f(1, 1, 1))));
-    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1.5, Vec3f(0.89, 0.73, 0.53))));
+    lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.5, 0.5, 1), 1.0, Vec3f(1,1,1))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 1.0, Vec3f(1,1,1))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1.5, Vec3f(1,1,1))));
   }
 
-  else if (sceneId == 4)
+  else if (sceneId == 3)
   {
-    objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(0, 12, -40), 10, mirror)));
-    objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(0, -2, -10), 1.5, gold)));
-    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(6,-4, -10), 1 ,3, gold)));
-    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-6,-4, -10), 2 ,3, gold)));
-     objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
+     Vec3f ta = Vec3f(-2, -4, -12);
+    Vec3f tb = Vec3f(-5, -4, -16);
+    Vec3f tc = Vec3f(1, -4, -16);
+    Vec3f top = Vec3f(-2, 2, -14);  
+
+    settings.width = 1920;
+    settings.height = 1080;
+    settings.envmap_ineed = 1;
+    settings.AA = 1;
+    //objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(0, 12, -40), 10, mirror)));
+    objects.push_back(std::unique_ptr<Object>( new Sphere(Vec3f(3, -2, -10), 1.5, ivory)));
+    objects.push_back(std::unique_ptr<Object>(new Cylinder (Vec3f(6,-4, -10), 1 ,3, green)));
+    objects.push_back(std::unique_ptr<Object>(new Cone (Vec3f(-6,-4, -10), 2 ,5, orange)));
+    objects.push_back(std::unique_ptr<Object>(new Plane (Vec3f(0,-4, 0),Vec3f(0,1,0 ),checker)));
 
 
-    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, gold)));
-    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,top, orange)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,top,tc, red)));
+    objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,top, blue)));
     objects.push_back(std::unique_ptr<Object>( new Triangle(tc,tb,top, orange)));
     objects.push_back(std::unique_ptr<Object>( new Triangle(ta,tb,tc, orange)));
 
 
-    //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-20, 20, 20), 0.5, Vec3f(1, 1, 1))));
-    //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, -25), 1.5, Vec3f(0.89, 0.73, 0.53))));
-    //lights.push_back(std::unique_ptr<Light>( new DirectLight(Vec3f(-0.4, 0, -1), 1.5, Vec3f(0.89, 0.73, 0.53))));
-    //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(20, 20, -13), 0.5, Vec3f(1, 1, 1))));
-    //lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(0, 0, 0), 2.5, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(0, 20, -6), 1.0, Vec3f(1, 1, 1))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(-30, 20, 20), 1.0, Vec3f(0.89, 0.73, 0.53))));
+    lights.push_back(std::unique_ptr<Light>( new PointLight(Vec3f(30, 20, 20), 1.0, Vec3f(0.89, 0.73, 0.53))));
   }
 
   std::vector<uint32_t> image(settings.height * settings.width * 3);

@@ -52,19 +52,6 @@ void fresnel(const Vec3f &I, const Vec3f &N, const float &ior, float &kr)
         float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)); 
         kr = (Rs * Rs + Rp * Rp) / 2; 
     } 
-    // As a consequence of the conservation of energy, transmittance is given by:
-    // kt = 1 - kr;
-} 
-
-Vec3f old_refract(const Vec3f &I, const Vec3f &N, const float &ior) 
-{ 
-    float cosi = clamp(-1, 1, dotProduct(I, N)); 
-    float etai = 1, etat = ior; 
-    Vec3f n = N; 
-    if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; } 
-    float eta = etai / etat; 
-    float k = 1 - eta * eta * (1 - cosi * cosi); 
-    return k < 0 ? 0 : I *eta + n*(eta * cosi - sqrtf(k)); 
 }  
 
 Vec3f refract(const Vec3f &I, const Vec3f &N, const float &refractive_index) 
