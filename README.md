@@ -26,3 +26,17 @@ Nvidia GTX1070).
 
  Скорость:
  Использование многопоточности +2
+ 
+ 
+ 
+ ЗАПУСК:
+Запуск Вашей программы должен выглядить следующим образом:
+. / r t −out <output_path> −s c ene <scene_number> −thr eads <threads>
+∙ output_path - путь к выходному изображению (относительный).
+∙ scene_number - номер сцены от 1 до 3.
+
+Порядок компиляции:
+mkdir bui ld
+cd bui ld
+cmake −DCMAKE\_BUILD\_TYPE=Re l eas e . .
+make −j 4
