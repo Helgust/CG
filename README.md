@@ -38,5 +38,7 @@ Nvidia GTX1070).
 Порядок компиляции:
 mkdir bui ld
 cd bui ld
-cmake −DCMAKE\_BUILD\_TYPE=Re l eas e . .
+cmake −DCMAKE\_BUILD\_TYPE=Release ..
 make −j 4
+
+Делать лучше из под Linux
